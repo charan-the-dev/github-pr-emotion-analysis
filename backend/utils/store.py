@@ -1,6 +1,7 @@
 import sqlite3
+import os
 
-def init_db(db_name='github_pr_comments.db'):
+def init_db(db_name):
     conn = sqlite3.connect(db_name)
     c = conn.cursor()
     
@@ -20,7 +21,7 @@ def init_db(db_name='github_pr_comments.db'):
     conn.close()
 
 
-def store_comments_to_db(comment_data, db_name='github_pr_comments.db'):
+def store_comments_to_db(comment_data, db_name):
     conn = sqlite3.connect(db_name)
     c = conn.cursor()
     
@@ -33,3 +34,17 @@ def store_comments_to_db(comment_data, db_name='github_pr_comments.db'):
     
     conn.commit()
     conn.close()
+
+
+def getAllComments(db_name):
+    conn = sqlite3.connect(db_name)
+    
+    # Using pandas to read SQL query directly into DataFrame
+    import pandas as pd
+    df = pd.read_sql_query('''
+        SELECT * FROM pr_comments
+    ''', conn)
+    
+    conn.close()
+    
+    return df

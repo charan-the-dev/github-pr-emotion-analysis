@@ -1,5 +1,5 @@
-from store import init_db, store_comments_to_db
-from data_fetching import fetch_pr_comments_for_repo
+from utils.store import init_db, store_comments_to_db
+from utils.data_fetching import fetch_pr_comments_for_repo
 import sqlite3
 import pandas as pd
 import os
@@ -10,7 +10,7 @@ if __name__ == '__main__':
     database_name = "github_pr_comments.db"
 
     # Initialize the Database
-    init_db()
+    init_db(os.path.join("data", database_name))
 
     # Fetch the PR comments
     comments = fetch_pr_comments_for_repo(repo_name, max_comments)
