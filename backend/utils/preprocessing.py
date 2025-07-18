@@ -1,57 +1,43 @@
-import pandas as pd
-import re
-import string
-from nltk.corpus import stopwords
-from nltk.stem import WordNetLemmatizer
-from nltk.tokenize import word_tokenize
-import nltk
 import sqlite3
-import os
-from store import getAllComments
+import pandas as pd
+import spacy
 
-# Download NLTK resources if not already
-nltk.download('punkt')
-nltk.download('stopwords')
-nltk.download('wordnet')
+# Load spaCy English model
+nlp = spacy.load("en_core_web_sm")
 
-# Example: loading data
-# df = pd.read_csv('your_data.csv')
-# Assuming you have a 'text' column
-# Initialize the Database
-
-df = getAllComments("./data/comments.db")
-
-print(df.columns)
-
-def preprocess_text(text):
-    # Lowercase
-    text = text.lower()
-    
-    # Remove URLs
-    text = re.sub(r'http\S+|www\S+|https\S+', '', text, flags=re.MULTILINE)
-    
-    # Remove mentions and hashtags
-    text = re.sub(r'\@\w+|\#','', text)
-    
-    # Remove punctuation
-    text = text.translate(str.maketrans('', '', string.punctuation))
-    
-    # Remove numbers
-    text = re.sub(r'\d+', '', text)
-    
-    # Tokenization
-    tokens = word_tokenize(text)
-    
-    # Remove stopwords and lemmatize
-    tokens = [lemmatizer.lemmatize(word) for word in tokens if word not in stop_words]
-    
-    # Join tokens back to string
+# Preprocessing function using spaCy
+def spacy_preprocess(text):
+    if pd.isnull(text):
+        return ""
+    doc = nlp(text)
+    tokens = [token.lemma_.lower() for token in doc if not token.is_stop and not token.is_punct and not token.is_digit and token.is_alpha]
     return ' '.join(tokens)
 
-# Apply preprocessing
-# df['clean_text'] = df['text'].apply(preprocess_text)
+# Function to load data from SQLite
+def load_data_from_sqlite(db_path, table_name):
+    conn = sqlite3.connect(db_path)
+    df = pd.read_sql_query(f"SELECT * FROM {table_name}", conn)
+    conn.close()
+    return df
 
-# # # View processed data
-# print(df[['text', 'clean_text']].head())
+# Function to save DataFrame to SQLite
+def save_data_to_sqlite(df, db_path, table_name):
+    conn = sqlite3.connect(db_path)
+    df.to_sql(table_name, conn, if_exists='replace', index=False)
+    conn.close()
 
-conn.close()
+# --- Example Usage ---
+
+db_path = './data/comments.db'
+table_name = 'pr_comments'
+
+# Load data
+df = load_data_from_sqlite(db_path, table_name)
+
+# Apply spaCy preprocessing
+df['clean_text'] = df['body'].fillna('').apply(spacy_preprocess)
+
+print(df[['body', 'clean_text']].head())
+
+# Save preprocessed data back to SQLite
+save_data_to_sqlite(df, db_path, 'processed_pr_comments')

@@ -1,5 +1,5 @@
 import sqlite3
-import os
+import pandas as pd
 
 def init_db(db_name):
     conn = sqlite3.connect(db_name)
@@ -21,30 +21,30 @@ def init_db(db_name):
     conn.close()
 
 
-def store_comments_to_db(comment_data, db_name):
-    conn = sqlite3.connect(db_name)
-    c = conn.cursor()
-    
-    for comment in comment_data:
-        c.execute('''
-            INSERT INTO pr_comments (repo_name, pr_number, comment_id, user, body, created_at)
-            VALUES (?, ?, ?, ?, ?, ?)
-        ''', (comment['repo_name'], comment['pr_number'], comment['comment_id'], 
-              comment['user'], comment['body'], comment['created_at']))
-    
-    conn.commit()
+def load_data_from_sqlite(db_path, table_name):
+    conn = sqlite3.connect(db_path)
+    query = f"SELECT * FROM {table_name}"
+    df = pd.read_sql_query(query, conn)
+    conn.close()
+    return df
+
+
+def save_data_to_sqlite(df, db_path, table_name):
+    conn = sqlite3.connect(db_path)
+    df.to_sql(table_name, conn, if_exists='replace', index=False)
     conn.close()
 
 
-def getAllComments(db_name):
+def getAllTables(db_name):
     conn = sqlite3.connect(db_name)
-    
-    # Using pandas to read SQL query directly into DataFrame
-    import pandas as pd
-    df = pd.read_sql_query('''
-        SELECT * FROM pr_comments
-    ''', conn)
-    
+    query = "SELECT name FROM sqlite_master WHERE type='table';"
+    tables = pd.read_sql_query(query, conn)
     conn.close()
-    
+    return tables
+
+
+def getAllComments(db_name, table_name):
+    conn = sqlite3.connect(db_name)
+    df = pd.read_sql_query(f'SELECT * FROM {table_name}', conn)
+    conn.close()
     return df

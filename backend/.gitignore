@@ -42,6 +42,7 @@ next-env.d.ts
 
 # python virtual env
 .venv/
+venv/
 
 # cache
 .cache/
